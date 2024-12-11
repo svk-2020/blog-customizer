@@ -20,3 +20,4 @@ dist
 .yarn
 
 storybook-static
+.old

@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import clsx from 'clsx';
 
 import { ArrowButton } from '../arrow-button';
@@ -7,6 +7,7 @@ import { Text } from '../text';
 import { Select } from '../select';
 import { RadioGroup } from '../radio-group';
 import { Separator } from '../separator';
+import { useOutsideClick } from './hook/useOutsideClick';
 
 import styles from './ArticleParamsForm.module.scss';
 import {
@@ -32,8 +33,8 @@ export const ArticleParamsForm = ({ setSettings }: TArticleParamsFormProps) => {
 	const [userSettings, setUserSettings] =
 		useState<ArticleStateType>(defaultArticleState);
 
-	// Общий контейнер компонента
-	const refContainer = useRef<HTMLDivElement | null>(null);
+	// Контейнер формы
+	const formRef = useRef<HTMLFormElement | null>(null);
 
 	// Применение пользовательских настроек
 	function submitForm(event: FormEvent) {
@@ -55,26 +56,17 @@ export const ArticleParamsForm = ({ setSettings }: TArticleParamsFormProps) => {
 		};
 	}
 
-	// Обработчик нажатия клавиши мыши вне формы (если она открыта)
-	function handleMouseClick(event: MouseEvent) {
-		if (refContainer.current && (event.target as Node)) {
-			if (!refContainer.current.contains(event.target as Node) && isOpen) {
-				setIsOpen(false);
-			}
-		}
-	}
-
-	useEffect(() => {
-		// Добавляем слушатели после рендеринга компонента
-		window.addEventListener('mousedown', handleMouseClick);
-		return () => {
-			// Удаляем слушатели после размонтирования компонента
-			window.removeEventListener('mousedown', handleMouseClick);
-		};
-	}, [isOpen]);
+	// при создании кастомного хука useOutsideClick использованы материалы статей:
+	// https://sky.pro/wiki/javascript/obrabotka-klika-vne-komponenta-v-react-universalniy-metod/
+	// https://spacejelly.dev/posts/how-to-detect-clicks-anywhere-on-a-page-in-react
+	useOutsideClick({
+		isOpen: isOpen,
+		objectRef: formRef,
+		onOutsideClick: () => setIsOpen(false),
+	});
 
 	return (
-		<div ref={refContainer}>
+		<>
 			<ArrowButton
 				isOpen={isOpen}
 				onClick={() => {
@@ -83,7 +75,11 @@ export const ArticleParamsForm = ({ setSettings }: TArticleParamsFormProps) => {
 			/>
 			<aside
 				className={clsx(styles.container, isOpen && styles.container_open)}>
-				<form className={styles.form} onSubmit={submitForm} onReset={resetForm}>
+				<form
+					ref={formRef}
+					className={styles.form}
+					onSubmit={submitForm}
+					onReset={resetForm}>
 					<Text
 						size={31}
 						weight={800}
@@ -131,6 +127,6 @@ export const ArticleParamsForm = ({ setSettings }: TArticleParamsFormProps) => {
 					</div>
 				</form>
 			</aside>
-		</div>
+		</>
 	);
 };
